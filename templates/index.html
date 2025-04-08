@@ -1,1 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATS Resume Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            padding-top: 20px;
+            padding-bottom: 50px;
+            background-color: #f8f9fa;
+        }
+        .section-card {
+            margin-bottom: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            background-color: #f1f8ff;
+            font-weight: bold;
+        }
+        .form-section {
+            margin-bottom: 30px;
+        }
+        .btn-add {
+            margin-top: 10px;
+        }
+        .dynamic-item {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+        .remove-btn {
+            color: #dc3545;
+            cursor: pointer;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .toggle-section {
+            cursor: pointer;
+            color: #0d6efd;
+        }
+        .list-group-item {
+            position: relative;
+        }
+        .delete-list-item {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">ATS-Optimized Resume Generator</h1>
+        <p class="text-center lead mb-5">Create a professionally formatted resume optimized for Applicant Tracking Systems</p>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <!-- JSON Import Section -->
+        <div class="card section-card mb-4">
+            <div class="card-header">
+                Import / Export Resume Data
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <form action="/upload_json" method="POST" enctype="multipart/form-data" class="mb-0">
+                            <div class="input-group">
+                                <input type="file" class="form-control" id="json_file" name="json_file" accept=".json">
+                                <button class="btn btn-outline-secondary" type="submit">Import JSON</button>
+                            </div>
+                            <div class="form-text">Upload a previously saved resume JSON file to pre-fill the form</div>
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <button id="saveJsonBtn" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-file-earmark-arrow-down"></i> Save Form Data as JSON
+                        </button>
+                        <div class="form-text">Save your current form data as a JSON file for future use</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <form id="resumeForm" action="/generate" method="POST" enctype="multipart/form-data">
+            <!-- Personal Information -->
+            <div class="card section-card">
+                <div class="card-header">
+                    Personal Information
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">Full Name*</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Email*</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="phone" class="form-label">Phone Number*</label>
+                            <input type="text" class="form-control" id="phone" name="phone" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="linkedin" class="form-label">LinkedIn URL</label>
+                            <input type="text" class="form-control" id="linkedin" name="linkedin" placeholder="linkedin.com/in/yourprofile">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="location" class="form-label">Location*</label>
+                            <input type="text" class="form-control" id="location" name="location" placeholder="City, State" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="output_filename" class="form-label">Output Filename</label>
+                            <input type="text" class="form-control" id="output_filename" name="output_filename" placeholder="your_resume.docx">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Professional Summary -->
+            <div class="card section-card">
+                <div class="card-header section-header">
+                    <span>Professional Summary</span>
+                    <span class="badge bg-secondary">Optional</span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="professional_summary" class="form-label">Professional Summary</label>
+                        <textarea class="form-control" id="professional_summary" name="professional_summary" rows="4" placeholder="Brief overview of your professional background, skills, and career goals"></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Work Experience -->
+            <div class="card section-card">
+                <div class="card-header section-header">
+                    <span>Work Experience</span>
+                </div>
+                <div class="card-body">
+                    <div id="workExperienceContainer">
+                        <!-- Work experience items will be added here dynamically -->
+                    </div>
+                    <input type="hidden" id="work_count" name="work_count" value="0">
+                    <button type="button" class="btn btn-primary btn-sm mt-2" id="addWorkExperience">
+                        <i class="bi bi-plus-circle"></i> Add Work Experience
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Internships (Optional) -->
+            <div class="card section-card">
+                <div class="card-header section-header">
+                    <span>Internships</span>
+                    <span class="badge bg-secondary">Optional</span>
+                </div>
+                <div class="card-body">
+                    <div id="internshipContainer">
+                        <!-- Internship items will be added here dynamically -->
+                    </div>
+                    <input type="hidden" id="intern_count" name="intern_count" value="0">
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="addInternship">
+                        <i class="bi bi-plus-circle"></i> Add Internship
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Projects (Optional) -->
+            <div class="card section-card">
+                <div class="card-header section-header">
+                    <span>Projects</span>
+                    <span class="badge bg-secondary">Optional</span>
+                </div>
+                <div class="card-body">
+                    <div id="projectContainer">
+                        <!-- Project items will be added here dynamically -->
+                    </div>
+                    <input type="hidden" id="project_count" name="project_count" value="0">
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="addProject">
+                        <i class="bi bi-plus-circle"></i> Add Project
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Technical Skills -->
+            <div class="card section-card">
+                <div class="card-header">
+                    Technical Skills
+                </div>
+                <div class="card-body">
+                    <div id="skillsContainer">
+                        <!-- Skill categories will be added here dynamically -->
+                        <div class="mb-3 skill-category">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Skill Category</label>
+                                    <input type="text" class="form-control" name="skill_category[]" placeholder="e.g., Programming Languages">
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label">Skills (comma separated)</label>
+                                    <input type="text" class="form-control" name="skill_values[]" placeholder="Python, JavaScript, Java, C++">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-sm mt-2" id="addSkillCategory">
+                        <i class="bi bi-plus-circle"></i> Add Skill Category
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Certifications (Optional) -->
+            <div class="card section-card">
+                <div class="card-header section-header">
+                    <span>Certifications</span>
+                    <span class="badge bg-secondary">Optional</span>
+                </div>
+                <div class="card-body">
+                    <div id="certificationContainer">
+                        <!-- Certification items will be added here dynamically -->
+                    </div>
+                    <input type="hidden" id="cert_count" name="cert_count" value="0">
+                    <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="addCertification">
+                        <i class="bi bi-plus-circle"></i> Add Certification
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Education -->
+            <div class="card section-card">
+                <div class="card-header">
+                    Education
+                </div>
+                <div class="card-body">
+                    <div id="educationContainer">
+                        <!-- Education items will be added here dynamically -->
+                    </div>
+                    <input type="hidden" id="edu_count" name="edu_count" value="0">
+                    <button type="button" class="btn btn-primary btn-sm mt-2" id="addEducation">
+                        <i class="bi bi-plus-circle"></i> Add Education
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Submit Button -->
+            <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn btn-success btn-lg">Generate Resume</button>
+            </div>
+        </form>
+        
+        <!-- Hidden form for JSON saving -->
+        <form id="jsonForm" action="/save_json" method="POST" style="display: none;"></form>
+    </div>
 
+    <!-- Templates for dynamic content -->
+    <template id="workExperienceTemplate">
+        <div class="dynamic-item work-item">
+            <div class="d-flex justify-content-between mb-3">
+                <h5>Work Experience</h5>
+                <span class="remove-btn" onclick="removeItem(this, 'work')"><i class="bi bi-x-circle"></i></span>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Job Title*</label>
+                    <input type="text" class="form-control" name="work_IDX_title" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Company*</label>
+                    <input type="text" class="form-control" name="work_IDX_company" required>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Location*</label>
+                    <input type="text" class="form-control" name="work_IDX_location" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Start Date*</label>
+                    <input type="text" class="form-control" name="work_IDX_start_date" placeholder="Month Year" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">End Date*</label>
+                    <input type="text" class="form-control" name="work_IDX_end_date" placeholder="Month Year or Present" required>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Responsibilities</label>
+                <div class="list-group resp-list-IDX">
+                    <div class="list-group-item">
+                        <input type="text" class="form-control border-0" name="work_IDX_resp_0" placeholder="Describe a job responsibility">
+                        <span class="delete-list-item text-danger"><i class="bi bi-x"></i></span>
+                    </div>
+                </div>
+                <input type="hidden" class="resp-count" name="work_IDX_resp_count" value="1">
+                <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="addResponsibility(IDX)">
+                    <i class="bi bi-plus-circle"></i> Add Responsibility
+                </button>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Achievements</label>
+                <div class="list-group ach-list-IDX">
+                    <div class="list-group-item">
+                        <input type="text" class="form-control border-0" name="work_IDX_ach_0" placeholder="Describe a key achievement">
+                        <span class="delete-list-item text-danger"><i class="bi bi-x"></i></span>
+                    </div>
+                </div>
+                <input type="hidden" class="ach-count" name="work_IDX_ach_count" value="1">
+                <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="addAchievement(IDX)">
+                    <i class="bi bi-plus-circle"></i> Add Achievement
+                </button>
+            </div>
+        </div>
+    </template>
+    
+    <template id="internshipTemplate">
+        <div class="dynamic-item internship-item">
+            <div class="d-flex justify-content-between mb-3">
+                <h5>Internship</h5>
+                <span class="remove-btn" onclick="removeItem(this, 'intern')"><i class="bi bi-x-circle"></i></span>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Internship Title*</label>
+                    <input type="text" class="form-control" name="intern_IDX_title" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Company*</label>
+                    <input type="text" class="form-control" name="intern_IDX_company" required>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Location*</label>
+                    <input type="text" class="form-control" name="intern_IDX_location" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Start Date*</label>
+                    <input type="text" class="form-control" name="intern_IDX_start_date" placeholder="Month Year" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">End Date*</label>
+                    <input type="text" class="form-control" name="intern_IDX_end_date" placeholder="Month Year" required>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Responsibilities</label>
+                <div class="list-group intern-resp-list-IDX">
+                    <div class="list-group-item">
+                        <input type="text" class="form-control border-0" name="intern_IDX_resp_0" placeholder="Describe an internship responsibility">
+                        <span class="delete-list-item text-danger"><i class="bi bi-x"></i></span>
+                    </div>
+                </div>
+                <input type="hidden" class="resp-count" name="intern_IDX_resp_count" value="1">
+                <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="addInternResponsibility(IDX)">
+                    <i class="bi bi-plus-circle"></i> Add Responsibility
+                </button>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Achievements</label>
+                <div class="list-group intern-ach-list-IDX">
+                    <div class="list-group-item">
+                        <input type="text" class="form-control border-0" name="intern_IDX_ach_0" placeholder="Describe a key achievement">
+                        <span class="delete-list-item text-danger"><i class="bi bi-x"></i></span>
+                    </div>
+                </div>
+                <input type="hidden" class="ach-count" name="intern_IDX_ach_count" value="1">
+                <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="addInternAchievement(IDX)">
+                    <i class="bi bi-plus-circle"></i> Add Achievement
+                </button>
+            </div>
+        </div>
+    </template>
+    
+    <template id="projectTemplate">
+        <div class="dynamic-item project-item">
+            <div class="d-flex justify-content-between mb-3">
+                <h5>Project</h5>
+                <span class="remove-btn" onclick="removeItem(this, 'project')"><i class="bi bi-x-circle"></i></span>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label class="form-label">Project Name*</label>
+                    <input type="text" class="form-control" name="project_IDX_name" required>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Description*</label>
+                <textarea class="form-control" name="project_IDX_description" rows="3" placeholder="Describe your project" required></textarea>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Start Date</label>
+                    <input type="text" class="form-control" name="project_IDX_start_date" placeholder="Month Year (optional)">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">End Date</label>
+                    <input type="text" class="form-control" name="project_IDX_end_date" placeholder="Month Year or Present (optional)">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Project URL</label>
+                <input type="text" class="form-control" name="project_IDX_url" placeholder="e.g., github.com/yourusername/project">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Technologies Used*</label>
+                <input type="text" class="form-control" name="project_IDX_technologies" placeholder="Python, React, PostgreSQL, etc. (comma separated)" required>
+            </div>
+        </div>
+    </template>
+    
+    <template id="skillCategoryTemplate">
+        <div class="mb-3 skill-category">
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">Skill Category</label>
+                    <input type="text" class="form-control" name="skill_category[]" placeholder="e.g., Programming Languages">
+                </div>
+                <div class="col-md-7">
+                    <label class="form-label">Skills (comma separated)</label>
+                    <input type="text" class="form-control" name="skill_values[]" placeholder="Python, JavaScript, Java, C++">
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="button" class="btn btn-outline-danger btn-sm mb-2" onclick="removeSkillCategory(this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
+    
+    <template id="certificationTemplate">
+        <div class="dynamic-item certification-item">
+            <div class="d-flex justify-content-between mb-3">
+                <h5>Certification</h5>
+                <span class="remove-btn" onclick="removeItem(this, 'cert')"><i class="bi bi-x-circle"></i></span>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Certification Name*</label>
+                    <input type="text" class="form-control" name="cert_IDX_name" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Issuing Organization*</label>
+                    <input type="text" class="form-control" name="cert_IDX_issuer" required>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Date Issued*</label>
+                    <input type="text" class="form-control" name="cert_IDX_date" placeholder="Month Year" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Expiration Date</label>
+                    <input type="text" class="form-control" name="cert_IDX_expiration" placeholder="Month Year (if applicable)">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Verification URL</label>
+                <input type="text" class="form-control" name="cert_IDX_url" placeholder="URL to verify certification (optional)">
+            </div>
+        </div>
+    </template>
+    
+    <template id="educationTemplate">
+        <div class="dynamic-item education-item">
+            <div class="d-flex justify-content-between mb-3">
+                <h5>Education</h5>
+                <span class="remove-btn" onclick="removeItem(this, 'edu')"><i class="bi bi-x-circle"></i></span>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Degree/Certification*</label>
+                    <input type="text" class="form-control" name="edu_IDX_degree" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Institution*</label>
+                    <input type="text" class="form-control" name="edu_IDX_institution" required>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Location*</label>
+                    <input type="text" class="form-control" name="edu_IDX_location" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Graduation Date*</label>
+                    <input type="text" class="form-control" name="edu_IDX_graduation" placeholder="Month Year" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">GPA</label>
+                    <input type="text" class="form-control" name="edu_IDX_gpa" placeholder="e.g., 3.8/4.0">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Relevant Courses (comma separated)</label>
+                <input type="text" class="form-control" name="edu_IDX_courses" placeholder="Data Structures, Algorithms, Machine Learning, etc.">
+            </div>
+        </div>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Dynamic content handling
+        let workCount = 0;
+        let internCount = 0;
+        let projectCount = 0;
+        let certCount = 0;
+        let eduCount = 0;
+        
+        // JSON Save Functionality
+        document.getElementById('saveJsonBtn').addEventListener('click', function() {
+            // Clone the main form's data to the hidden JSON form
+            const mainForm = document.getElementById('resumeForm');
+            const jsonForm = document.getElementById('jsonForm');
+            
+            // Clear any previous form data
+            jsonForm.innerHTML = '';
+            
+            // Clone all form fields
+            const formData = new FormData(mainForm);
+            for (let [name, value] of formData.entries()) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                input.value = value;
+                jsonForm.appendChild(input);
+            }
+            
+            // Submit the form to save JSON
+            jsonForm.submit();
+        });
+        
+        // Handle pre-filled data from JSON import
+        function populateFormFromJSON(jsonData) {
+            // Reset all dynamic containers
+            document.getElementById('workExperienceContainer').innerHTML = '';
+            document.getElementById('internshipContainer').innerHTML = '';
+            document.getElementById('projectContainer').innerHTML = '';
+            document.getElementById('skillsContainer').innerHTML = '';
+            document.getElementById('certificationContainer').innerHTML = '';
+            document.getElementById('educationContainer').innerHTML = '';
+            
+            // Reset counters
+            workCount = 0;
+            internCount = 0;
+            projectCount = 0;
+            certCount = 0;
+            eduCount = 0;
+            
+            // Set personal information
+            document.getElementById('name').value = jsonData.name || '';
+            
+            // Handle contact info - this comes as an array [email, phone, linkedin, location]
+            if (jsonData.contact_info && jsonData.contact_info.length >= 4) {
+                document.getElementById('email').value = jsonData.contact_info[0] || '';
+                document.getElementById('phone').value = jsonData.contact_info[1] || '';
+                document.getElementById('linkedin').value = jsonData.contact_info[2] || '';
+                document.getElementById('location').value = jsonData.contact_info[3] || '';
+            }
+            
+            // Set professional summary
+            document.getElementById('professional_summary').value = jsonData.professional_summary || '';
+            
+            // Output filename
+            if (jsonData.output_filename) {
+                document.getElementById('output_filename').value = jsonData.output_filename;
+            }
+            
+            // Populate work experience
+            if (jsonData.work_experience && jsonData.work_experience.length > 0) {
+                jsonData.work_experience.forEach(job => {
+                    addWorkExperience(); // This creates a new work experience form section
+                    
+                    // Get the current work experience index (it's incremented after addWorkExperience)
+                    const idx = workCount - 1;
+                    
+                    // Fill in basic fields
+                    document.querySelector(`[name="work_${idx}_title"]`).value = job.title || '';
+                    document.querySelector(`[name="work_${idx}_company"]`).value = job.company || '';
+                    document.querySelector(`[name="work_${idx}_location"]`).value = job.location || '';
+                    document.querySelector(`[name="work_${idx}_start_date"]`).value = job.start_date || '';
+                    document.querySelector(`[name="work_${idx}_end_date"]`).value = job.end_date || '';
+                    
+                    // Clear default responsibility and achievement fields
+                    document.querySelector(`.resp-list-${idx}`).innerHTML = '';
+                    document.querySelector(`.ach-list-${idx}`).innerHTML = '';
+                    
+                    // Add responsibilities
+                    if (job.responsibilities && job.responsibilities.length > 0) {
+                        job.responsibilities.forEach((resp, respIdx) => {
+                            const item = document.createElement('div');
+                            item.className = 'list-group-item';
+                            item.innerHTML = `
+                                <input type="text" class="form-control border-0" name="work_${idx}_resp_${respIdx}" value="${resp}" placeholder="Describe a job responsibility">
+                                <span class="delete-list-item text-danger"><i class="bi bi-x"></i></span>
+                            `;
+                            document.querySelector(`.resp-list-${idx}`).appendChild(item);
+                            
+                            // Set up delete button
+                            item.querySelector('.delete-list-item').addEventListener('click', function() {
+                                item.remove();
+                                updateListCount(document.querySelector(`.resp-list-${idx}`), document.querySelector(`[name="work_${idx}_resp_count"]`), 'work', idx, 'resp');
+                            });
+                        });
+                        document.querySelector(`[name="work_${idx}_resp_count"]`).value = job.responsibilities.length;
+                    } else {
+                        // Add at least one empty responsibility field
+                        addResponsibility(idx);
+                    }
+                    
+                    // Add achievements
+                    if (job.achievements && job.achievements.length > 0) {
+                        job.achievements.forEach((ach, achIdx) => {
+                            const item = document.createElement('div');
+                            item.className = 'list-group-item';
+                            item.innerHTML = `
+                                <input type="text" class="form-control border-0" name="work_${idx}_ach_${achIdx}" value="${ach}" placeholder="Describe a key achievement">
+                                <span class="delete-list-item text-danger"><i class="bi bi-x"></i></span>
+                            `;
+                            document.querySelector(`.ach-list-${idx}`).appendChild(item);
+                            
+                            // Set up delete button
+                            item.querySelector('.delete-list-item').addEventListener('click', function() {
+                                item.remove();
+                                updateListCount(document.querySelector(`.ach-list-${idx}`), document.querySelector(`[name="work_${idx}_ach_count"]`), 'work', idx, 'ach');
+                            });
+                        });
+                        document.querySelector(`[name="work_${idx}_ach_count"]`).value = job.achievements.length;
+                    } else {
+                        // Add at least one empty achievement field
+                        addAchievement(idx);
+                    }
+                });
+            } else {
+                // Add one empty work experience section if none exists
+                addWorkExperience();
+            }
+            
+            // Populate internships (optional)
+            if (jsonData.internships && jsonData.internships.length > 0) {
+                jsonData.internships.forEach(internship => {
+                    // Add new internship section
+                    const container = document.getElementById('internshipContainer');
+                    const template = document.getElementById('internshipTemplate').innerHTML;
+                    const internItem = document.createElement('div');
+                    internItem.innerHTML = template.replace(/IDX/g, internCount);
+                    container.appendChild(internItem);
+                    
+                    // Set up event listeners for delete buttons
+                    setupDeleteButtons(internItem);
+                    
+                    // Get the current internship index
+                    const idx = internCount;
+                    
+                    // Fill in basic fields
+                    document.querySelector(`[name="intern_${idx}_title"]`).value = internship.title || '';
+                    document.querySelector(`[name="intern_${idx}_company"]`).value = internship.company || '';
+                    document.querySelector(`[name="intern_${idx}_location"]`).value = internship.location || '';
+                    document.querySelector(`[name="intern_${idx}_start_date"]`).value = internship.start_date || '';
+                    document.querySelector(`[name="intern_${idx}_end_date"]`).value = internship.end_date || '';
+                    
+                    // Clear default responsibility and achievement fields
+                    document.querySelector(`.intern-resp-list-${idx}`).innerHTML = '';
+                    document.querySelector(`.intern-ach-list-${idx}`).innerHTML = '';
+                    
+                    // Add responsibilities
+                    if (internship.responsibilities && internship.responsibilities.length > 0) {
+                        internship.responsibilities.forEach((resp, respIdx) => {
+                            const item = document.createElement('div');
+                            item.className = 'list-group-item';
+                            item.innerHTML = `
+                                <input type="text" class="form-control border-0" name="intern_${idx}_resp_${respIdx}" value="${resp}" placeholder="Describe an internship responsibility">
+                                <span class="delete-list-item text-danger"><i class="bi bi-x"></i></span>
+                            `;
+                            document.querySelector(`.intern-resp-list-${idx}`).appendChild(item);
+                            
+                            // Set up delete button
+                            item.querySelector('.delete-list-item').addEventListener('click', function() {
+                                item.remove();
+                                updateListCount(document.querySelector(`.intern-resp-list-${idx}`), document.querySelector(`[name="intern_${idx}_resp_count"]`), 'intern', idx, 'resp');
+                            });
+                        });
+                        document.querySelector(`[name="intern_${idx}_resp_count"]`).value = internship.responsibilities.length;
+                    } else {
+                        // Add at least one empty responsibility field
+                        addInternResponsibility(idx);
+                    }
+                    
+                    // Add achievements
+                    if (internship.achievements && internship.achievements.length > 0) {
+                        internship.achievements.forEach((ach, achIdx) => {
+                            const item = document.createElement('div');
+                            item.className = 'list-group-item';
+                            item.innerHTML = `
+                                <input type="text" class="form-control border-0" name="intern_${idx}_ach_${achIdx}" value="${ach}" placeholder="Describe a key achievement">
+                                <span class="delete-list-item text-danger"><i class="bi bi-x"></i></span>
+                            `;
+                            document.querySelector(`.intern-ach-list-${idx}`).appendChild(item);
+                            
+                            // Set up delete button
+                            item.querySelector('.delete-list-item').addEventListener('click', function() {
+                                item.remove();
+                                updateListCount(document.querySelector(`.intern-ach-list-${idx}`), document.querySelector(`[name="intern_${idx}_ach_count"]`), 'intern', idx, 'ach');
+                            });
+                        });
+                        document.querySelector(`[name="intern_${idx}_ach_count"]`).value = internship.achievements.length;
+                    } else {
+                        // Add at least one empty achievement field
+                        addInternAchievement(idx);
+                    }
+                    
+                    // Update internship count
+                    internCount++;
+                });
+                
+                // Update the hidden count field
+                document.getElementById('intern_count').value = internCount;
+            }
+            
+            // Populate projects (optional)
+            if (jsonData.projects && jsonData.projects.length > 0) {
+                jsonData.projects.forEach(project => {
+                    // Add new project section
+                    const container = document.getElementById('projectContainer');
+                    const template = document.getElementById('projectTemplate').innerHTML;
+                    const projectItem = document.createElement('div');
+                    projectItem.innerHTML = template.replace(/IDX/g, projectCount);
+                    container.appendChild(projectItem);
+                    
+                    // Get the current project index
+                    const idx = projectCount;
+                    
+                    // Fill in fields
+                    document.querySelector(`[name="project_${idx}_name"]`).value = project.name || '';
+                    document.querySelector(`[name="project_${idx}_description"]`).value = project.description || '';
+                    document.querySelector(`[name="project_${idx}_start_date"]`).value = project.start_date || '';
+                    document.querySelector(`[name="project_${idx}_end_date"]`).value = project.end_date || '';
+                    document.querySelector(`[name="project_${idx}_url"]`).value = project.url || '';
+                    
+                    // Handle technologies (array to comma-separated string)
+                    if (project.technologies && project.technologies.length > 0) {
+                        document.querySelector(`[name="project_${idx}_technologies"]`).value = project.technologies.join(', ');
+                    }
+                    
+                    // Update project count
+                    projectCount++;
+                });
+                
+                // Update the hidden count field
+                document.getElementById('project_count').value = projectCount;
+            }
+            
+            // Populate technical skills
+            if (jsonData.technical_skills && Object.keys(jsonData.technical_skills).length > 0) {
+                // Clear default skill category
+                document.getElementById('skillsContainer').innerHTML = '';
+                
+                // Add each skill category
+                Object.entries(jsonData.technical_skills).forEach(([category, skills]) => {
+                    const container = document.getElementById('skillsContainer');
+                    const template = document.getElementById('skillCategoryTemplate').innerHTML;
+                    const skillItem = document.createElement('div');
+                    skillItem.innerHTML = template;
+                    container.appendChild(skillItem);
+                    
+                    // Set category and skills
+                    const categoryInputs = skillItem.querySelectorAll('input');
+                    categoryInputs[0].value = category;
+                    categoryInputs[1].value = skills.join(', ');
+                });
+            }
+            
+            // Populate certifications (optional)
+            if (jsonData.certifications && jsonData.certifications.length > 0) {
+                jsonData.certifications.forEach(cert => {
+                    // Add new certification section
+                    const container = document.getElementById('certificationContainer');
+                    const template = document.getElementById('certificationTemplate').innerHTML;
+                    const certItem = document.createElement('div');
+                    certItem.innerHTML = template.replace(/IDX/g, certCount);
+                    container.appendChild(certItem);
+                    
+                    // Get the current certification index
+                    const idx = certCount;
+                    
+                    // Fill in fields
+                    document.querySelector(`[name="cert_${idx}_name"]`).value = cert.name || '';
+                    document.querySelector(`[name="cert_${idx}_issuer"]`).value = cert.issuer || '';
+                    document.querySelector(`[name="cert_${idx}_date"]`).value = cert.date || '';
+                    document.querySelector(`[name="cert_${idx}_expiration"]`).value = cert.expiration_date || '';
+                    document.querySelector(`[name="cert_${idx}_url"]`).value = cert.url || '';
+                    
+                    // Update certification count
+                    certCount++;
+                });
+                
+                // Update the hidden count field
+                document.getElementById('cert_count').value = certCount;
+            }
+            
+            // Populate education
+            if (jsonData.education && jsonData.education.length > 0) {
+                jsonData.education.forEach(edu => {
+                    addEducation(); // This creates a new education form section
+                    
+                    // Get the current education index (it's incremented after addEducation)
+                    const idx = eduCount - 1;
+                    
+                    // Fill in fields
+                    document.querySelector(`[name="edu_${idx}_degree"]`).value = edu.degree || '';
+                    document.querySelector(`[name="edu_${idx}_institution"]`).value = edu.institution || '';
+                    document.querySelector(`[name="edu_${idx}_location"]`).value = edu.location || '';
+                    document.querySelector(`[name="edu_${idx}_graduation"]`).value = edu.graduation_date || '';
+                    document.querySelector(`[name="edu_${idx}_gpa"]`).value = edu.gpa || '';
+                    
+                    // Handle relevant courses (array to comma-separated string)
+                    if (edu.relevant_courses && edu.relevant_courses.length > 0) {
+                        document.querySelector(`[name="edu_${idx}_courses"]`).value = edu.relevant_courses.join(', ');
+                    }
+                });
+            } else {
+                // Add one empty education section if none exists
+                addEducation();
+            }
+        }
+        
+        // Check if there's prefill data available from server (from JSON import)
+        document.addEventListener('DOMContentLoaded', function() {
+            // Define a variable to hold the prefill data
+            var prefillData = null;
+            
+            // Server-rendered flag to check if prefill data exists
+            var hasPrefillData = {% if prefill_data %}true{% else %}false{% endif %};
+            
+            if (hasPrefillData) {
+                // Get the prefill data from the server
+                prefillData = {{ prefill_data|tojson if prefill_data else '{}' }};
+                // Populate the form with the data
+                populateFormFromJSON(prefillData);
+            } else {
+                // Default initialization with empty form
+                addWorkExperience();
+                addEducation();
+            }
+        });
+        
+        // Work Experience
+        document.getElementById('addWorkExperience').addEventListener('click', function() {
+            addWorkExperience();
+        });
+        
+        function addWorkExperience() {
+            const container = document.getElementById('workExperienceContainer');
+            const template = document.getElementById('workExperienceTemplate').innerHTML;
+            const workItem = document.createElement('div');
+            workItem.innerHTML = template.replace(/IDX/g, workCount);
+            container.appendChild(workItem);
+            
+            // Set up event listeners for delete buttons in the new item
+            setupDeleteButtons(workItem);
+            
+            // Update work count
+            document.getElementById('work_count').value = ++workCount;
+        }
+        
+        // Internships
+        document.getElementById('addInternship').addEventListener('click', function() {
+            const container = document.getElementById('internshipContainer');
+            const template = document.getElementById('internshipTemplate').innerHTML;
+            const internItem = document.createElement('div');
+            internItem.innerHTML = template.replace(/IDX/g, internCount);
+            container.appendChild(internItem);
+            
+            // Set up event listeners for delete buttons in the new item
+            setupDeleteButtons(internItem);
+            
+            // Update internship count
+            document.getElementById('intern_count').value = ++internCount;
+        });
+        
+        // Projects
+        document.getElementById('addProject').addEventListener('click', function() {
+            const container = document.getElementById('projectContainer');
+            const template = document.getElementById('projectTemplate').innerHTML;
+            const projectItem = document.createElement('div');
+            projectItem.innerHTML = template.replace(/IDX/g, projectCount);
+            container.appendChild(projectItem);
+            
+            // Update project count
+            document.getElementById('project_count').value = ++projectCount;
+        });
+        
+        // Skill Categories
+        document.getElementById('addSkillCategory').addEventListener('click', function() {
+            const container = document.getElementById('skillsContainer');
+            const template = document.getElementById('skillCategoryTemplate').innerHTML;
+            const skillItem = document.createElement('div');
+            skillItem.innerHTML = template;
+            container.appendChild(skillItem);
+        });
+        
+        function removeSkillCategory(button) {
+            const skillItem = button.closest('.skill-category');
+            skillItem.remove();
+        }
+        
+        // Certifications
+        document.getElementById('addCertification').addEventListener('click', function() {
+            const container = document.getElementById('certificationContainer');
+            const template = document.getElementById('certificationTemplate').innerHTML;
+            const certItem = document.createElement('div');
+            certItem.innerHTML = template.replace(/IDX/g, certCount);
+            container.appendChild(certItem);
+            
+            // Update certification count
+            document.getElementById('cert_count').value = ++certCount;
+        });
+        
+        // Education
+        document.getElementById('addEducation').addEventListener('click', function() {
+            addEducation();
+        });
+        
+        function addEducation() {
+            const container = document.getElementById('educationContainer');
+            const template = document.getElementById('educationTemplate').innerHTML;
+            const eduItem = document.createElement('div');
+            eduItem.innerHTML = template.replace(/IDX/g, eduCount);
+            container.appendChild(eduItem);
+            
+            // Update education count
+            document.getElementById('edu_count').value = ++eduCount;
+        }
+        
+        // Removing items
+        function removeItem(button, type) {
+            const item = button.closest('.dynamic-item');
+            item.remove();
+            
+            // Update count and reindex items
+            updateItemCounts(type);
+        }
+        
+        function updateItemCounts(type) {
+            let count = 0;
+            const container = document.getElementById(`${type === 'work' ? 'workExperience' : type === 'intern' ? 'internship' : type === 'project' ? 'project' : type === 'cert' ? 'certification' : 'education'}Container`);
+            const items = container.querySelectorAll(`.${type === 'work' ? 'work' : type === 'intern' ? 'internship' : type === 'project' ? 'project' : type === 'cert' ? 'certification' : 'education'}-item`);
+            
+            items.forEach((item, index) => {
+                // Update all input names with new index
+                const inputs = item.querySelectorAll(`[name^="${type}_"]`);
+                inputs.forEach(input => {
+                    const newName = input.name.replace(new RegExp(`${type}_\\d+`), `${type}_${index}`);
+                    input.name = newName;
+                });
+                count++;
+            });
+            
+            document.getElementById(`${type}_count`).value = count;
+        }
+        
+        // Responsibilities and Achievements
+        function addResponsibility(idx) {
+            const list = document.querySelector(`.resp-list-${idx}`);
+            const countInput = document.querySelector(`[name="work_${idx}_resp_count"]`);
+            const count = parseInt(countInput.value);
+            
+            const item = document.createElement('div');
+            item.className = 'list-group-item';
+            item.innerHTML = `
+                <input type="text" class="form-control border-0" name="work_${idx}_resp_${count}" placeholder="Describe a job responsibility">
+                <span class="delete-list-item text-danger"><i class="bi bi-x"></i></span>
+            `;
+            list.appendChild(item);
+            
+            // Set up delete button
+            item.querySelector('.delete-list-item').addEventListener('click', function() {
+                item.remove();
+                updateListCount(list, countInput, 'work', idx, 'resp');
+            });
+            
+            countInput.value = count + 1;
+        }
+        
+        function addAchievement(idx) {
+            const list = document.querySelector(`.ach-list-${idx}`);
+            const countInput = document.querySelector(`[name="work_${idx}_ach_count"]`);
+            const count = parseInt(countInput.value);
+            
+            const item = document.createElement('div');
+            item.className = 'list-group-item';
+            item.innerHTML = `
+                <input type="text" class="form-control border-0" name="work_${idx}_ach_${count}" placeholder="Describe a key achievement">
+                <span class="delete-list-item text-danger"><i class="bi bi-x"></i></span>
+            `;
+            list.appendChild(item);
+            
+            // Set up delete button
+            item.querySelector('.delete-list-item').addEventListener('click', function() {
+                item.remove();
+                updateListCount(list, countInput, 'work', idx, 'ach');
+            });
+            
+            countInput.value = count + 1;
+        }
+        
+        function addInternResponsibility(idx) {
+            const list = document.querySelector(`.intern-resp-list-${idx}`);
+            const countInput = document.querySelector(`[name="intern_${idx}_resp_count"]`);
+            const count = parseInt(countInput.value);
+            
+            const item = document.createElement('div');
+            item.className = 'list-group-item';
+            item.innerHTML = `
+                <input type="text" class="form-control border-0" name="intern_${idx}_resp_${count}" placeholder="Describe an internship responsibility">
+                <span class="delete-list-item text-danger"><i class="bi bi-x"></i></span>
+            `;
+            list.appendChild(item);
+            
+            // Set up delete button
+            item.querySelector('.delete-list-item').addEventListener('click', function() {
+                item.remove();
+                updateListCount(list, countInput, 'intern', idx, 'resp');
+            });
+            
+            countInput.value = count + 1;
+        }
+        
+        function addInternAchievement(idx) {
+            const list = document.querySelector(`.intern-ach-list-${idx}`);
+            const countInput = document.querySelector(`[name="intern_${idx}_ach_count"]`);
+            const count = parseInt(countInput.value);
+            
+            const item = document.createElement('div');
+            item.className = 'list-group-item';
+            item.innerHTML = `
+                <input type="text" class="form-control border-0" name="intern_${idx}_ach_${count}" placeholder="Describe a key achievement">
+                <span class="delete-list-item text-danger"><i class="bi bi-x"></i></span>
+            `;
+            list.appendChild(item);
+            
+            // Set up delete button
+            item.querySelector('.delete-list-item').addEventListener('click', function() {
+                item.remove();
+                updateListCount(list, countInput, 'intern', idx, 'ach');
+            });
+            
+            countInput.value = count + 1;
+        }
+        
+        function updateListCount(list, countInput, type, idx, listType) {
+            const items = list.querySelectorAll('.list-group-item');
+            
+            items.forEach((item, index) => {
+                const input = item.querySelector('input');
+                input.name = `${type}_${idx}_${listType}_${index}`;
+            });
+            
+            countInput.value = items.length;
+        }
+        
+        function setupDeleteButtons(container) {
+            const deleteButtons = container.querySelectorAll('.delete-list-item');
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const item = this.closest('.list-group-item');
+                    const list = item.parentElement;
+                    const listClass = list.className.split(' ').find(cls => cls.includes('list-'));
+                    const match = listClass.match(/(resp|ach)-list-(\d+)/);
+                    
+                    if (match) {
+                        const listType = match[1];
+                        const idx = match[2];
+                        const type = list.className.includes('intern') ? 'intern' : 'work';
+                        const countInput = document.querySelector(`[name="${type}_${idx}_${listType}_count"]`);
+                        
+                        item.remove();
+                        updateListCount(list, countInput, type, idx, listType);
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html> 
