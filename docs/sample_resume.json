@@ -1,1 +1,109 @@
-
+{
+  "name": "Jane Smith",
+  "contact_info": [
+    "jane.smith@email.com",
+    "(123) 456-7890",
+    "linkedin.com/in/janesmith",
+    "San Francisco, CA"
+  ],
+  "professional_summary": "Innovative Software Engineer with 6+ years of experience in full-stack development, cloud architecture, and machine learning. Proven track record of designing and implementing scalable solutions that drive business growth and enhance user experience. Known for strong problem-solving abilities and effective cross-functional collaboration.",
+  
+  "work_experience": [
+    {
+      "title": "Senior Software Engineer",
+      "company": "Tech Innovations Inc.",
+      "location": "San Francisco, CA",
+      "start_date": "March 2020",
+      "end_date": "Present",
+      "responsibilities": [
+        "Lead the development of a microservices architecture using Node.js and Docker, improving system scalability by 150%",
+        "Architect and implement cloud-based solutions on AWS, managing a suite of services including EC2, Lambda, and DynamoDB",
+        "Collaborate with product managers and UX designers to translate business requirements into technical specifications",
+        "Mentor junior engineers through code reviews, pair programming, and technical guidance"
+      ],
+      "achievements": [
+        "Reduced API response time by 60% through implementation of caching strategies and database optimization",
+        "Designed and implemented a CI/CD pipeline that decreased deployment time from days to minutes",
+        "Led migration from monolithic architecture to microservices, resulting in 40% lower maintenance costs"
+      ]
+    },
+    {
+      "title": "Software Engineer",
+      "company": "DataSystems LLC",
+      "location": "Oakland, CA",
+      "start_date": "July 2017",
+      "end_date": "February 2020",
+      "responsibilities": [
+        "Developed and maintained RESTful APIs using Python Flask and PostgreSQL",
+        "Implemented responsive front-end interfaces using React, Redux, and Material UI",
+        "Collaborated in an Agile team environment using Scrum methodologies",
+        "Performed unit and integration testing to ensure code quality and reliability"
+      ],
+      "achievements": [
+        "Created a data visualization dashboard that increased client engagement by 35%",
+        "Improved application performance by implementing efficient data structures, reducing memory usage by 25%",
+        "Received Employee of the Quarter award for exceptional problem-solving skills"
+      ]
+    },
+    {
+      "title": "Junior Developer",
+      "company": "WebSolutions Co.",
+      "location": "San Jose, CA",
+      "start_date": "August 2015",
+      "end_date": "June 2017",
+      "responsibilities": [
+        "Built and maintained web applications using JavaScript, HTML, and CSS",
+        "Assisted in database design and implementation using MySQL",
+        "Collaborated with QA team to identify and fix bugs in existing applications",
+        "Participated in daily stand-ups and sprint planning sessions"
+      ],
+      "achievements": [
+        "Developed a custom content management system that improved content publishing efficiency by 50%",
+        "Created comprehensive documentation that streamlined onboarding process for new developers"
+      ]
+    }
+  ],
+  
+  "technical_skills": {
+    "Programming Languages": ["JavaScript", "Python", "TypeScript", "Java", "SQL", "HTML", "CSS"],
+    "Frameworks & Libraries": ["React", "Node.js", "Express", "Flask", "Django", "Redux", "Angular"],
+    "Cloud & DevOps": ["AWS", "Docker", "Kubernetes", "CI/CD", "Jenkins", "Terraform", "GitHub Actions"],
+    "Databases": ["PostgreSQL", "MongoDB", "MySQL", "DynamoDB", "Redis"],
+    "Tools & Methodologies": ["Agile", "Scrum", "Jira", "Git", "RESTful APIs", "Microservices", "TDD"]
+  },
+  
+  "education": [
+    {
+      "degree": "Master of Science in Computer Science",
+      "institution": "Stanford University",
+      "location": "Stanford, CA",
+      "graduation_date": "May 2015",
+      "gpa": "3.9/4.0",
+      "relevant_courses": [
+        "Advanced Algorithm Design",
+        "Machine Learning",
+        "Distributed Systems",
+        "Cloud Computing",
+        "Advanced Database Systems",
+        "Software Engineering Methodologies"
+      ]
+    },
+    {
+      "degree": "Bachelor of Science in Computer Engineering",
+      "institution": "University of California, Los Angeles",
+      "location": "Los Angeles, CA",
+      "graduation_date": "June 2013",
+      "gpa": "3.7/4.0",
+      "relevant_courses": [
+        "Data Structures & Algorithms",
+        "Computer Architecture",
+        "Operating Systems",
+        "Database Management",
+        "Web Development",
+        "Object-Oriented Programming"
+      ]
+    }
+  ],
+  
+  "output_filename": "Jane_Smith_Resume.docx"
+} 
